@@ -1,16 +1,17 @@
 {
   "name": "an-fetch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个基于原生fetch封装的请求库，满足大多数业务场景",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "webpack --mode=production",
-    "build:dev": "webpack --mode=development",
+    "build": "webpack --mode=production && npm run build:types",
+    "build:dev": "webpack --mode=development && npm run build:types",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
     "dev": "webpack --mode=development --watch",
     "test": "jest",
     "lint": "eslint src --ext .ts,.js",

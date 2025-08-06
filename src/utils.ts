@@ -1,4 +1,4 @@
-import { DataTypeMap, FormatDataResult } from '../types';
+import { DataTypeMap, FormatDataResult } from './types';
 
 /**
  * @param {object} query 参数对象
