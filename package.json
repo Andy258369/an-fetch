@@ -14,7 +14,7 @@
   "scripts": {
     "build": "webpack --mode=production && npm run build:types",
     "build:dev": "webpack --mode=development && npm run build:types",
-    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "build:types": "tsc --project tsconfig.build.json",
     "dev": "webpack --mode=development --watch",
     "test": "jest",
     "test:watch": "jest --watch",
