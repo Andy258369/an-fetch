@@ -82,6 +82,94 @@ Object.defineProperty(global, 'Headers', {
   },
 });
 
+Object.defineProperty(global, 'FormData', {
+  writable: true,
+  value: class {
+    private data: Map<string, any> = new Map();
+
+    append(name: string, value: any, filename?: string): void {
+      const existing = this.data.get(name);
+      if (existing) {
+        if (Array.isArray(existing)) {
+          existing.push(value);
+        } else {
+          this.data.set(name, [existing, value]);
+        }
+      } else {
+        this.data.set(name, value);
+      }
+    }
+
+    delete(name: string): void {
+      this.data.delete(name);
+    }
+
+    get(name: string): any {
+      const value = this.data.get(name);
+      return Array.isArray(value) ? value[0] : value;
+    }
+
+    getAll(name: string): any[] {
+      const value = this.data.get(name);
+      return Array.isArray(value) ? value : value ? [value] : [];
+    }
+
+    has(name: string): boolean {
+      return this.data.has(name);
+    }
+
+    set(name: string, value: any, filename?: string): void {
+      this.data.set(name, value);
+    }
+
+    forEach(callback: (value: any, key: string, parent: any) => void): void {
+      this.data.forEach((value, key) => {
+        if (Array.isArray(value)) {
+          value.forEach(v => callback(v, key, this));
+        } else {
+          callback(value, key, this);
+        }
+      });
+    }
+
+    entries(): IterableIterator<[string, any]> {
+      const entries: [string, any][] = [];
+      this.data.forEach((value, key) => {
+        if (Array.isArray(value)) {
+          value.forEach(v => entries.push([key, v]));
+        } else {
+          entries.push([key, value]);
+        }
+      });
+      return entries[Symbol.iterator]();
+    }
+
+    keys(): IterableIterator<string> {
+      const keys: string[] = [];
+      this.data.forEach((value, key) => {
+        if (Array.isArray(value)) {
+          value.forEach(() => keys.push(key));
+        } else {
+          keys.push(key);
+        }
+      });
+      return keys[Symbol.iterator]();
+    }
+
+    values(): IterableIterator<any> {
+      const values: any[] = [];
+      this.data.forEach(value => {
+        if (Array.isArray(value)) {
+          values.push(...value);
+        } else {
+          values.push(value);
+        }
+      });
+      return values[Symbol.iterator]();
+    }
+  },
+});
+
 Object.defineProperty(global, 'Blob', {
   writable: true,
   value: class {
@@ -101,6 +189,40 @@ Object.defineProperty(global, 'Blob', {
           }
         });
       }
+    }
+
+    slice(start?: number, end?: number, contentType?: string): any {
+      return new (this.constructor as any)([], { type: contentType || this.type });
+    }
+
+    stream(): any {
+      return {
+        getReader: () => ({
+          read: () => Promise.resolve({ done: true, value: undefined })
+        })
+      };
+    }
+
+    text(): Promise<string> {
+      return Promise.resolve('');
+    }
+
+    arrayBuffer(): Promise<ArrayBuffer> {
+      return Promise.resolve(new ArrayBuffer(0));
+    }
+  },
+});
+
+Object.defineProperty(global, 'File', {
+  writable: true,
+  value: class extends (global as any).Blob {
+    name: string;
+    lastModified: number;
+
+    constructor(fileBits: any[], fileName: string, options?: any) {
+      super(fileBits, options);
+      this.name = fileName;
+      this.lastModified = options?.lastModified || Date.now();
     }
   },
 });
