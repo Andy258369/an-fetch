@@ -136,7 +136,14 @@ describe('an-fetch', () => {
         retryInterval: 100,
       });
 
-      await expect(request.send()).rejects.toThrow('Network error');
+      // 使用 Promise 来捕获错误而不是让其成为未捕获异常
+      try {
+        await request.send();
+        fail('应该抛出错误');
+      } catch (error) {
+        expect(error).toEqual(mockError);
+      }
+      
       expect(fetch).toHaveBeenCalledTimes(3); // Original + 2 retries
     });
   });

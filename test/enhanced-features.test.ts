@@ -10,16 +10,9 @@ import {
   RequestTransformers,
   ResponseTransformers,
   AxiosLikeRequestConfig,
-  AxiosLikeResponse,
 } from '../src/index';
 
-// Mock fetch
-global.fetch = jest.fn();
-
 describe('Enhanced an-fetch', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
 
   describe('便捷方法测试', () => {
     it('应该支持 GET 请求', async () => {
@@ -119,7 +112,7 @@ describe('Enhanced an-fetch', () => {
         { id: 3, name: 'User 3' },
       ];
 
-      mockResponses.forEach((response, index) => {
+      mockResponses.forEach((response) => {
         (fetch as jest.Mock).mockResolvedValueOnce({
           ok: true,
           status: 200,
@@ -302,7 +295,7 @@ describe('Enhanced an-fetch', () => {
       const transformed = ResponseTransformers.parseDate([
         'created_at',
         'updated_at',
-      ])(data);
+      ])(data) as any;
 
       expect(transformed.created_at).toBeInstanceOf(Date);
       expect(transformed.updated_at).toBeInstanceOf(Date);
@@ -388,7 +381,7 @@ describe('Enhanced an-fetch', () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const response = await post<CreateUserResponse, CreateUserRequest>(
+      const response = await post<CreateUserResponse>(
         '/api/users',
         requestData
       );
@@ -409,7 +402,9 @@ describe('Enhanced an-fetch', () => {
         blob: () => Promise.resolve(mockBlob),
       });
 
-      const blobResponse = await get('/api/file', { responseType: 'blob' });
+      const blobResponse = await get<Blob>('/api/file', {
+        responseType: 'blob',
+      });
       expect(blobResponse.data).toEqual(mockBlob);
 
       // 测试 text 响应
@@ -421,7 +416,9 @@ describe('Enhanced an-fetch', () => {
         text: () => Promise.resolve(mockText),
       });
 
-      const textResponse = await get('/api/text', { responseType: 'text' });
+      const textResponse = await get<string>('/api/text', {
+        responseType: 'text',
+      });
       expect(textResponse.data).toBe(mockText);
     });
   });
@@ -441,7 +438,10 @@ describe('Enhanced an-fetch', () => {
         validateStatus: status => status === 202,
       };
 
-      const response = await get('/api/async-task', config);
+      const response = await get<{ message: string }>(
+        '/api/async-task',
+        config
+      );
       expect(response.status).toBe(202);
     });
 
@@ -470,7 +470,11 @@ describe('Enhanced an-fetch', () => {
         ],
       };
 
-      const response = await post('/api/user', requestData, config);
+      const response = await post<{
+        userId: number;
+        userName: string;
+        isActive: boolean;
+      }>('/api/user', requestData, config);
 
       expect(response.data).toEqual({
         userId: 1,
@@ -494,7 +498,7 @@ describe('Enhanced an-fetch', () => {
       });
 
       // 测试便捷方法是否正常工作
-      const response = await get('/api/test');
+      const response = await get<{ data: string }>('/api/test');
       expect(response.data).toEqual(mockResponse);
     });
   });
@@ -508,7 +512,7 @@ describe('Enhanced an-fetch', () => {
         json: () => Promise.resolve(null),
       });
 
-      const response = await get('/api/empty');
+      const response = await get<null>('/api/empty');
       expect(response.status).toBe(204);
       expect(response.data).toBeNull();
     });
@@ -525,7 +529,8 @@ describe('Enhanced an-fetch', () => {
         json: () => Promise.resolve(largeData),
       });
 
-      const response = await get('/api/large-data');
+      const response =
+        await get<Array<{ id: number; value: string }>>('/api/large-data');
       expect(response.data).toHaveLength(10000);
       expect(response.data[0]).toEqual({ id: 0, value: 'item-0' });
     });
@@ -545,7 +550,12 @@ describe('Enhanced an-fetch', () => {
         json: () => Promise.resolve(specialData),
       });
 
-      const response = await get('/api/special-chars');
+      const response = await get<{
+        emoji: string;
+        chinese: string;
+        special: string;
+        unicode: string;
+      }>('/api/special-chars');
       expect(response.data).toEqual(specialData);
     });
   });
