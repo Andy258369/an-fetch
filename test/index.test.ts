@@ -69,9 +69,6 @@ describe('an-fetch', () => {
         }),
       });
 
-      // 清理之前的拦截器设置
-      service.interceptors.response.handlers.length = 0;
-
       const request = api.test();
       const result = await request.send();
 
@@ -96,9 +93,6 @@ describe('an-fetch', () => {
           json: () => Promise.resolve(mockResponse),
         }),
       });
-
-      // 清理之前的拦截器设置
-      service.interceptors.response.handlers.length = 0;
 
       const request = api.post();
       const result = await request.send({
