@@ -1,0 +1,192 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # 代码质量检查和测试
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: 安装依赖
+      run: npm ci
+
+    - name: 代码格式检查
+      run: npm run lint
+
+    - name: TypeScript 类型检查
+      run: npm run type-check
+
+    - name: 运行测试
+      run: npm run test:coverage
+
+    - name: 上传测试覆盖率报告
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info
+        fail_ci_if_error: false
+
+  # 构建检查
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: 安装依赖
+      run: npm ci
+
+    - name: 构建项目
+      run: npm run build
+
+    - name: 检查构建产物
+      run: |
+        ls -la dist/
+        test -f dist/index.js
+        test -f dist/index.d.ts
+
+    # 缓存构建产物供发布使用
+    - name: 缓存构建产物
+      uses: actions/cache@v3
+      with:
+        path: dist
+        key: build-${{ github.sha }}
+
+  # 自动发布到 npm（仅在 main/master 分支）
+  publish:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+      with:
+        # 获取完整的 git 历史，用于版本标签
+        fetch-depth: 0
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: 安装依赖
+      run: npm ci
+
+    - name: 恢复构建产物
+      uses: actions/cache@v3
+      with:
+        path: dist
+        key: build-${{ github.sha }}
+
+    - name: 重新构建（如果缓存失败）
+      run: |
+        if [ ! -d "dist" ]; then
+          npm run build
+        fi
+
+    - name: 检查是否需要发布新版本
+      id: version-check
+      run: |
+        # 获取当前 package.json 中的版本
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # 检查该版本是否已经在 npm 上存在
+        if npm view an-fetch@$CURRENT_VERSION version 2>/dev/null; then
+          echo "version-exists=true" >> $GITHUB_OUTPUT
+          echo "版本 $CURRENT_VERSION 已存在，跳过发布"
+        else
+          echo "version-exists=false" >> $GITHUB_OUTPUT
+          echo "版本 $CURRENT_VERSION 不存在，准备发布"
+        fi
+
+    - name: 创建 Git 标签
+      if: steps.version-check.outputs.version-exists == 'false'
+      run: |
+        VERSION=${{ steps.version-check.outputs.current-version }}
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "v$VERSION" -m "Release version $VERSION"
+        git push origin "v$VERSION"
+
+    - name: 发布到 npm
+      if: steps.version-check.outputs.version-exists == 'false'
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: 创建 GitHub Release
+      if: steps.version-check.outputs.version-exists == 'false'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version-check.outputs.current-version }}
+        release_name: Release v${{ steps.version-check.outputs.current-version }}
+        body: |
+          ## 🚀 新版本发布 v${{ steps.version-check.outputs.current-version }}
+          
+          ### 📦 安装
+          ```bash
+          npm install an-fetch@${{ steps.version-check.outputs.current-version }}
+          ```
+          
+          ### 🔗 链接
+          - [npm 包](https://www.npmjs.com/package/an-fetch)
+          - [完整更新日志](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+          
+          自动生成的发布说明，详细更改请查看提交历史。
+        draft: false
+        prerelease: false
+
+  # 通知发布结果
+  notify:
+    runs-on: ubuntu-latest
+    needs: [publish]
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+    - name: 发布成功通知
+      if: needs.publish.result == 'success'
+      run: |
+        echo "🎉 成功发布新版本到 npm!"
+        echo "📦 包地址: https://www.npmjs.com/package/an-fetch"
+
+    - name: 发布跳过通知
+      if: needs.publish.result == 'skipped'
+      run: |
+        echo "ℹ️ 版本已存在，跳过发布"
+
+    - name: 发布失败通知
+      if: needs.publish.result == 'failure'
+      run: |
+        echo "❌ 发布失败，请检查日志"
+        exit 1

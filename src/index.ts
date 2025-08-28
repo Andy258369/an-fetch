@@ -5,9 +5,19 @@ import {
   RequestResult,
   ServiceResult,
   ServiceFunction,
-  Interceptors,
 } from './types';
 import { formatData, parseQuery, omitObj } from './utils';
+import {
+  get,
+  post,
+  put,
+  del as deleteMethod,
+  patch,
+  head,
+  options,
+  all,
+  race,
+} from './axios-like';
 
 const interceptorsRequest: Array<
   (config: ApiConfig) => ApiConfig | Promise<ApiConfig>
@@ -287,6 +297,17 @@ function service(
   },
 };
 
+// 便捷方法
+(service as ServiceFunction).get = get;
+(service as ServiceFunction).post = post;
+(service as ServiceFunction).put = put;
+(service as ServiceFunction).delete = deleteMethod;
+(service as ServiceFunction).patch = patch;
+(service as ServiceFunction).head = head;
+(service as ServiceFunction).options = options;
+(service as ServiceFunction).all = all;
+(service as ServiceFunction).race = race;
+
 export default service as ServiceFunction;
 export { service };
 export type {
@@ -297,4 +318,65 @@ export type {
   ServiceResult,
   ServiceFunction,
   Interceptors,
-};
+  AxiosLikeRequestConfig,
+  AxiosLikeResponse,
+  ProgressEvent,
+  HttpError,
+  RetryConfig,
+  CacheConfig,
+  RateLimitConfig,
+  TypedRequestConfig,
+  TypeSafeHttpMethods,
+  ApiDefinition,
+  TypedApiClient,
+  ResponseInterceptor,
+  RequestInterceptor,
+  ErrorHandler,
+  StatusValidator,
+  DataTransformer,
+  HttpMethod,
+  ResponseType,
+  ContentType,
+  CredentialsType,
+} from './types';
+export {
+  get,
+  post,
+  put,
+  del as delete,
+  patch,
+  head,
+  options,
+  all,
+  race,
+} from './axios-like';
+export {
+  HTTP_STATUS,
+  isInformational,
+  isSuccess,
+  isRedirection,
+  isClientError,
+  isServerError,
+  isError,
+  STATUS_MESSAGES,
+  createHttpError,
+  createErrorFromResponse,
+  ErrorClassifier,
+  ErrorRecoveryStrategy,
+  ErrorReporter,
+  defaultErrorHandlers,
+  installDefaultErrorHandlers,
+  createStatusValidator,
+  getStatusMessage,
+  isRedirectStatus,
+  requiresAuth,
+  isForbidden,
+  isRateLimited,
+} from './error-handling';
+export {
+  RequestTransformers,
+  ResponseTransformers,
+  CommonTransformers,
+  PresetTransformers,
+  TransformerFactory,
+} from './transformers';

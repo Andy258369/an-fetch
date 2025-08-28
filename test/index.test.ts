@@ -208,7 +208,7 @@ describe('an-fetch', () => {
       });
 
       // Add response interceptor
-      service.interceptors.response.use((response: Response) => {
+      service.interceptors.response.use(() => {
         return { intercepted: true, data: 'modified' };
       });
 

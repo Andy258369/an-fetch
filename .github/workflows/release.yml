@@ -1,0 +1,138 @@
+name: Release Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-type:
+        description: '版本更新类型'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      pre-release:
+        description: '是否为预发布版本'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: 配置 Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: 安装依赖
+      run: npm ci
+
+    - name: 运行测试
+      run: npm test
+
+    - name: 更新版本号
+      id: version
+      run: |
+        if [ "${{ github.event.inputs.pre-release }}" == "true" ]; then
+          NEW_VERSION=$(npm version pre${{ github.event.inputs.version-type }} --preid=beta --no-git-tag-version)
+        else
+          NEW_VERSION=$(npm version ${{ github.event.inputs.version-type }} --no-git-tag-version)
+        fi
+        echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "新版本: $NEW_VERSION"
+
+    - name: 更新 CHANGELOG
+      run: |
+        # 创建或更新 CHANGELOG.md
+        if [ ! -f CHANGELOG.md ]; then
+          echo "# 更新日志" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+        fi
+        
+        # 添加新版本条目
+        VERSION=${{ steps.version.outputs.new-version }}
+        DATE=$(date +%Y-%m-%d)
+        
+        # 创建临时文件
+        cat > temp_changelog.md << EOF
+# 更新日志
+
+## [$VERSION] - $DATE
+
+### 新增
+- 版本 $VERSION 发布
+
+EOF
+        
+        # 合并原有内容（跳过第一行标题）
+        if [ -f CHANGELOG.md ]; then
+          tail -n +3 CHANGELOG.md >> temp_changelog.md
+        fi
+        
+        mv temp_changelog.md CHANGELOG.md
+
+    - name: 构建项目
+      run: npm run build
+
+    - name: 提交版本更新
+      run: |
+        git add package.json package-lock.json CHANGELOG.md
+        git commit -m "chore: release ${{ steps.version.outputs.new-version }}"
+        git tag -a "${{ steps.version.outputs.new-version }}" -m "Release ${{ steps.version.outputs.new-version }}"
+
+    - name: 推送更改
+      run: |
+        git push origin main
+        git push origin "${{ steps.version.outputs.new-version }}"
+
+    - name: 发布到 npm
+      run: |
+        if [ "${{ github.event.inputs.pre-release }}" == "true" ]; then
+          npm publish --tag beta
+        else
+          npm publish
+        fi
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: 创建 GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.new-version }}
+        release_name: Release ${{ steps.version.outputs.new-version }}
+        body: |
+          ## 🚀 版本 ${{ steps.version.outputs.new-version }} 发布
+          
+          ### 📦 安装
+          ```bash
+          npm install an-fetch@${{ steps.version.outputs.new-version }}
+          ```
+          
+          ### 🔗 相关链接
+          - [npm 包](https://www.npmjs.com/package/an-fetch)
+          - [完整文档](https://github.com/${{ github.repository }}/blob/main/README.md)
+          - [TypeScript 使用指南](https://github.com/${{ github.repository }}/blob/main/TYPESCRIPT_USAGE.md)
+          
+          ### 📋 更新内容
+          请查看 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) 获取详细更新内容。
+        draft: false
+        prerelease: ${{ github.event.inputs.pre-release }}

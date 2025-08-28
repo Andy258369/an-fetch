@@ -1,12 +1,15 @@
 {
   "name": "an-fetch",
-  "version": "1.0.1",
-  "description": "一个基于原生fetch封装的请求库，满足大多数业务场景",
+  "version": "2.0.0",
+  "description": "一个基于原生fetch封装的强大请求库，具备完整的TypeScript支持，满足企业级应用的各种场景",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "TYPESCRIPT_USAGE.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "webpack --mode=production && npm run build:types",
@@ -14,17 +17,37 @@
     "build:types": "tsc --emitDeclarationOnly --outDir dist",
     "dev": "webpack --mode=development --watch",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts,.js",
     "lint:fix": "eslint src --ext .ts,.js --fix",
-    "format": "prettier --write \"src/**/*.{ts,js}\" \"test/**/*.{ts,js}\"",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"test/**/*.{ts,js}\" \"examples/**/*.{ts,js}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js}\" \"test/**/*.{ts,js}\" \"examples/**/*.{ts,js}\"",
     "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && npm run test",
+    "examples": "node -r ts-node/register examples/complete-usage.ts",
+    "release:patch": "npm version patch && git push --follow-tags",
+    "release:minor": "npm version minor && git push --follow-tags",
+    "release:major": "npm version major && git push --follow-tags"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Andy258369/an-fetch.git"
   },
-  "keywords": ["fetch", "http", "client", "ajax", "request", "typescript"],
+  "keywords": [
+    "fetch", 
+    "http", 
+    "client", 
+    "ajax", 
+    "request", 
+    "typescript",
+    "axios-like",
+    "progress",
+    "interceptors",
+    "concurrent",
+    "transformers",
+    "error-handling"
+  ],
   "author": "m18680602188@163.com",
   "license": "ISC",
   "bugs": {

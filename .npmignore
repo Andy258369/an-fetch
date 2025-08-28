@@ -1,0 +1,59 @@
+# .npmignore - 控制哪些文件不会被发布到npm
+
+# 源代码和开发文件
+src/
+test/
+examples/
+.github/
+docs/
+
+# 配置文件
+.eslintrc.*
+.prettierrc.*
+jest.config.js
+webpack.config.js
+tsconfig.json
+
+# 开发依赖
+node_modules/
+coverage/
+
+# 版本控制
+.git/
+.gitignore
+
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 临时文件
+.tmp/
+.cache/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 文档源文件（保留编译后的README）
+ENHANCEMENT_SUMMARY.md
+
+# 仅保留以下文件到npm包：
+# - dist/ (构建产物)
+# - README.md (项目说明)
+# - TYPESCRIPT_USAGE.md (使用指南)
+# - CHANGELOG.md (更新日志)
+# - package.json
+# - LICENSE
