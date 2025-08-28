@@ -60,33 +60,24 @@ jobs:
 
     - name: 更新 CHANGELOG
       run: |
-        # 创建或更新 CHANGELOG.md
-        if [ ! -f CHANGELOG.md ]; then
-          echo "# 更新日志" > CHANGELOG.md
-          echo "" >> CHANGELOG.md
-        fi
-        
-        # 添加新版本条目
         VERSION=${{ steps.version.outputs.new-version }}
         DATE=$(date +%Y-%m-%d)
         
-        # 创建临时文件
-        cat > temp_changelog.md << EOF
-# 更新日志
-
-## [$VERSION] - $DATE
-
-### 新增
-- 版本 $VERSION 发布
-
-EOF
+        # 创建新的 CHANGELOG 内容
+        echo "# 更新日志" > new_changelog.md
+        echo "" >> new_changelog.md
+        echo "## [$VERSION] - $DATE" >> new_changelog.md
+        echo "" >> new_changelog.md
+        echo "### 新增" >> new_changelog.md
+        echo "- 版本 $VERSION 发布" >> new_changelog.md
+        echo "" >> new_changelog.md
         
-        # 合并原有内容（跳过第一行标题）
+        # 如果存在旧的 CHANGELOG，追加到新内容后面
         if [ -f CHANGELOG.md ]; then
-          tail -n +3 CHANGELOG.md >> temp_changelog.md
+          tail -n +3 CHANGELOG.md >> new_changelog.md
         fi
         
-        mv temp_changelog.md CHANGELOG.md
+        mv new_changelog.md CHANGELOG.md
 
     - name: 构建项目
       run: npm run build
@@ -123,7 +114,7 @@ EOF
           ## 🚀 版本 ${{ steps.version.outputs.new-version }} 发布
           
           ### 📦 安装
-          ```bash
+          ```
           npm install an-fetch@${{ steps.version.outputs.new-version }}
           ```
           
