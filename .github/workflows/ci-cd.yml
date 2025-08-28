@@ -82,6 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, build]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
 
     steps:
     - name: Checkout 代码
@@ -89,6 +93,8 @@ jobs:
       with:
         # 获取完整的 git 历史，用于版本标签
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
 
     - name: 设置 Node.js
       uses: actions/setup-node@v4
@@ -136,6 +142,8 @@ jobs:
         git config --local user.name "GitHub Action"
         git tag -a "v$VERSION" -m "Release version $VERSION"
         git push origin "v$VERSION"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 发布到 npm
       if: steps.version-check.outputs.version-exists == 'false'
@@ -145,27 +153,25 @@ jobs:
 
     - name: 创建 GitHub Release
       if: steps.version-check.outputs.version-exists == 'false'
-      uses: actions/create-release@v1
+      run: |
+        RELEASE_BODY="## 🚀 新版本发布 v${{ steps.version-check.outputs.current-version }}
+        
+        ### 📦 安装
+        \`\`\`bash
+        npm install an-fetch@${{ steps.version-check.outputs.current-version }}
+        \`\`\`
+        
+        ### 🔗 链接
+        - [npm 包](https://www.npmjs.com/package/an-fetch)
+        - [完整更新日志](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+        
+        自动生成的发布说明，详细更改请查看提交历史。"
+        
+        gh release create "v${{ steps.version-check.outputs.current-version }}" \
+          --title "Release v${{ steps.version-check.outputs.current-version }}" \
+          --notes "$RELEASE_BODY"
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ steps.version-check.outputs.current-version }}
-        release_name: Release v${{ steps.version-check.outputs.current-version }}
-        body: |
-          ## 🚀 新版本发布 v${{ steps.version-check.outputs.current-version }}
-          
-          ### 📦 安装
-          ```bash
-          npm install an-fetch@${{ steps.version-check.outputs.current-version }}
-          ```
-          
-          ### 🔗 链接
-          - [npm 包](https://www.npmjs.com/package/an-fetch)
-          - [完整更新日志](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
-          
-          自动生成的发布说明，详细更改请查看提交历史。
-        draft: false
-        prerelease: false
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 通知发布结果
   notify:
