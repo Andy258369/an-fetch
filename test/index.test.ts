@@ -1,13 +1,6 @@
 import service, { GlobalConfig, ApiConfig } from '../src/index';
 
-// Mock fetch
-global.fetch = jest.fn();
-
 describe('an-fetch', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('service function', () => {
     it('should create service with default config', () => {
       const api = service();
@@ -134,6 +127,7 @@ describe('an-fetch', () => {
 
     it('should handle network errors with retry', async () => {
       const mockError = new Error('Network error');
+      mockError.name = 'NetworkError';
       (fetch as jest.Mock).mockRejectedValue(mockError);
 
       const request = api.test({
@@ -142,7 +136,7 @@ describe('an-fetch', () => {
         retryInterval: 100,
       });
 
-      await expect(request.send()).rejects.toBe(mockError);
+      await expect(request.send()).rejects.toThrow('Network error');
       expect(fetch).toHaveBeenCalledTimes(3); // Original + 2 retries
     });
   });

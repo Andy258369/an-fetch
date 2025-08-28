@@ -18,4 +18,16 @@ module.exports = {
   testTimeout: 10000,
   // 启用详细输出
   verbose: true,
+  // 添加全局设置
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.test.json',
+    },
+  },
+  // 环境变量设置
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  // 模块文件扩展名
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  // 忽略转换的模块
+  transformIgnorePatterns: ['node_modules/(?!.*\.mjs$)'],
 };
