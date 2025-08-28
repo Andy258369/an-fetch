@@ -47,7 +47,7 @@ function service(
     cancelRepeatedRequests: false, // 是否开启自动取消重复请求
     credentials: 'same-origin', // 携带cookies
   },
-  apiConfig: Record<string, ApiConfig>
+  apiConfig: Record<string, ApiConfig> = {}
 ): ServiceResult {
   const pendingMap = new Map<string, AbortController>(); // 记录正在进行中的请求
   return Object.keys(apiConfig).reduce((prev, key) => {

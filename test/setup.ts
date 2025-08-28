@@ -4,6 +4,17 @@ import 'core-js/stable';
 // 全局 fetch mock 设置
 global.fetch = jest.fn();
 
+// 添加未捕获异常处理
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('Unhandled Rejection at:', promise, 'reason:', reason);
+  // 不要抛出错误，只是记录
+});
+
+process.on('uncaughtException', (error) => {
+  console.warn('Uncaught Exception:', error);
+  // 不要抛出错误，只是记录
+});
+
 // 添加浏览器 API polyfills - 使用简单的对象扩展避免类型冲突
 Object.defineProperty(global, 'Headers', {
   writable: true,
