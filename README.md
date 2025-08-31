@@ -476,6 +476,7 @@ ISC
 
 ## 📖 更多文档
 
+- [**📋 完整 API 参考文档**](./API_REFERENCE.md) - 详细的API说明和表格展示
 - [完整 API 文档](./docs/api.md)
 - [使用示例](./examples/)
 - [TypeScript 类型定义](./src/types.ts)
